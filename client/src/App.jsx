@@ -87,6 +87,51 @@ function App() {
     });
   };
 
+  // FUNCION EDITAR
+  const editHandler = (imageName) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.onchange = (e) => {
+      const newFile = e.target.files[0];
+      if (!newFile) {
+        alert('No se seleccionó ninguna imagen');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', newFile);
+
+      const imageId = imageName.split('-')[0]; // Extraer el ID de la imagen
+      fetch(`http://localhost:3001/images/edit/${imageId}`, {
+        method: 'PUT',
+        body: formData
+      })
+        .then(res => res.text())
+        .then(res => {
+          console.log('Respuesta al editar imagen:', res);
+          Swal.fire({
+            title: 'Imagen actualizada!',
+            icon: 'success',
+            timer: 3000
+          });
+          setListaActualizada(true); // Actualizar la lista
+        })
+        .catch(err => {
+          console.error('Error al editar la imagen:', err);
+          Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "No se logró actualizar la imagen",
+          });
+        });
+    };
+
+    // Simular un clic para abrir el selector de archivos
+    input.click();
+  };
+
   return (
     <>
       <nav className="navbar navbar-dark bg-dark">
@@ -115,8 +160,17 @@ function App() {
             imageList.map((image, index) => (
               <div key={index} className="col-md-3 mb-4">
                 <div className="card">
-                  <img className='card-img-top' style={{ height: '200px', width: '100%' }} src={`http://localhost:3001/dbimages/${image}`} alt="foto producto" onError={(e) => { e.target.onerror = null; e.target.src = 'placeholder.png'; }} />
-                  <button type="button" onClick={() => deleteHandler(image)} className="btn btn-danger mt-2">Eliminar</button>                </div>
+                  <img
+                    className="card-img-top"
+                    style={{ height: '200px', width: '100%' }}
+                    src={`http://localhost:3001/dbimages/${image}?t=${Date.now()}`}
+                    alt="foto producto"
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'placeholder.png'; }}
+                  />
+
+                  <button type="button" onClick={() => deleteHandler(image)} className="btn btn-danger mt-2">Eliminar</button>
+                  <button type="button" onClick={() => editHandler(image)} className="btn btn-warning mt-2">Editar</button>
+                </div>
               </div>
             ))
           )}

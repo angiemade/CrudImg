@@ -103,5 +103,45 @@ router.delete('/images/delete/:id', (req, res) => {
     });
 });
 
+// EDITAR IMAGEN
+router.put('/images/edit/:id', fileUpload, (req, res) => {
+    const db = req.db;
+
+    if (!req.file) {
+        return res.status(400).send('No se ha subido ningún archivo');
+    }
+
+    const tipo = req.file.mimetype;
+    const nombre = req.file.originalname;
+    const datos = fs.readFileSync(path.join(__dirname, '../images/' + req.file.filename));
+
+    // Actualizar el registro en la base de datos
+    db.query('UPDATE foto SET ? WHERE id = ?', [{ tipo, nombre, datos }, req.params.id], (err, rows) => {
+        if (err) {
+            return res.status(500).send('Error del servidor: ' + err.message);
+        }
+
+        // Actualizar la imagen en el directorio `dbimages`
+        const filePath = path.join(__dirname, '../dbimages/' + req.params.id + '-pps.png');
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath); // Eliminar el archivo existente
+            } catch (err) {
+                console.error('Error al eliminar el archivo anterior:', err.message);
+            }
+        }
+
+        try {
+            fs.writeFileSync(filePath, datos); // Escribir el nuevo archivo
+        } catch (err) {
+            console.error('Error al guardar el archivo actualizado:', err.message);
+            return res.status(500).send('Error al guardar el archivo: ' + err.message);
+        }
+
+        res.send('¡Imagen actualizada!');
+    });
+});
+
+
 
 module.exports = router;
