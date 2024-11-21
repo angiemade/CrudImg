@@ -71,6 +71,13 @@ function App() {
     });
   };
 
+  // CANCELAR NUEVA IMAGEN
+  const cancelAddHandler = () => {
+    setImagePreview(null);
+    setFile(null);
+    setCropper(null);
+  };
+
   // EDITAR IMAGEN
   const editHandler = (imageName) => {
     const imageId = imageName.split('-')[0]; // Extraer el ID de la imagen
@@ -94,6 +101,14 @@ function App() {
 
     // Simular clic para abrir el selector de archivos
     input.click();
+  };
+
+  // CANCELAR EDICIÓN
+  const cancelEditHandler = () => {
+    setEditingImageId(null);
+    setEditingImagePreview(null);
+    setFile(null);
+    setCropper(null);
   };
 
   // GUARDAR CAMBIOS EN IMAGEN EDITADA
@@ -190,7 +205,6 @@ function App() {
                 cursor: imagePreview ? 'default' : 'pointer'
               }}
               onClick={() => !imagePreview && document.getElementById('fileinput').click()}
-              
             >
               {imagePreview ? (
                 <>
@@ -213,7 +227,13 @@ function App() {
                   >
                     Subir Imagen
                   </button>
-                  
+                  <button
+                    type="button"
+                    onClick={cancelAddHandler}
+                    className="btn btn-secondary mt-2"
+                  >
+                    Cancelar
+                  </button>
                 </>
               ) : (
                 <i
@@ -257,6 +277,13 @@ function App() {
                         className="btn btn-success mt-2"
                       >
                         Guardar Cambios
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEditHandler}
+                        className="btn btn-secondary mt-2"
+                      >
+                        Cancelar
                       </button>
                     </>
                   ) : (

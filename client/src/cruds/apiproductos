@@ -1,0 +1,94 @@
+const express=require("express");
+const app =express();
+const mysql =require("mysql2");
+const cors=require("cors");
+
+app.use(cors());
+app.use(express.json());
+
+
+
+
+const db =mysql.createConnection({
+    host:"localhost",
+    user:"root",
+    password:"mysql",
+    database:"pequeta"
+})
+
+module.exports = db;
+
+app.use(require('./routes/imagenesRoutes')) // llama a routes
+
+
+//GUARDAR/CREAR
+app.post("/create",(req,res)=>{
+    const nombre = req.body.nombre;
+    const descripcion = req.body.descripcion;
+    const precio = req.body.precio;
+
+    db.query('INSERT INTO productos(nombre,descripcion,precio) VALUES (?,?,?)',[nombre,descripcion,precio],
+        (err,result)=>{
+            if(err){
+                console.log(err);
+            }else{
+                res.send(result);
+            }
+        }
+    );
+})
+
+//MOSTRAR LISTA
+app.get("/mostrar",(req,res)=>{
+
+    db.query('SELECT * FROM productos',
+        (err,result)=>{
+            if(err){
+                console.log(err);
+            }else{
+                res.send(result);
+            }
+        }
+    );
+})
+
+//ACTUAIZAR/EDITAR
+app.put("/editar",(req,res)=>{ 
+    const id= req.body.id;
+    const nombre = req.body.nombre;
+    const descripcion = req.body.descripcion;
+    const precio = req.body.precio;
+
+
+    db.query('UPDATE productos SET nombre=?,descripcion=?,precio=? WHERE id=?',[nombre,descripcion,precio,id],
+        (err,result)=>{
+            if(err){
+                console.log(err);
+            }else{
+                res.send(result);
+            }
+        }
+    );
+});
+
+//ELIMINAR
+app.delete("/eliminar/:id",(req,res)=>{ 
+    const id= req.params.id;
+    
+
+
+    db.query('DELETE FROM productos WHERE  id=?',[id],
+        (err,result)=>{
+            if(err){
+                console.log(err);
+            }else{
+                res.send(result);
+            }
+        }
+    );
+});
+
+
+app.listen(3001,()=>{
+    console.log("Corriendo en el puerto 3001","http://localhost:" + 3001)
+})
