@@ -1,0 +1,285 @@
+// // === Frontend (Componente React) ===
+// import { useState, useEffect } from 'react';
+// import Axios from 'axios';
+// import './App.css';
+// import 'bootstrap/dist/css/bootstrap.min.css';
+// import Swal from 'sweetalert2';
+
+// function App() {
+//   const [nombre, setNombre] = useState("");
+//   const [descripcion, setDescripcion] = useState("");
+//   const [precio, setPrecio] = useState("");
+//   const [categoriaId, setCategoriaId] = useState("");
+//   const [productoList, setProductos] = useState([]);
+//   const [categorias, setCategorias] = useState([]);
+//   const [editar, setEditar] = useState(false);
+//   const [id, setId] = useState();
+
+//   // Obtener categorías
+//   const getCategorias = () => {
+//     Axios.get("http://localhost:3001/categorias").then((response) => {
+//       setCategorias(response.data);
+//     }).catch((error) => {
+//       console.error("Error al obtener las categorías", error);
+//     });
+//   };
+
+//   useEffect(() => {
+//     getCategorias();
+//     getProductos();
+//   }, []);
+
+//   // Guardar/Crear producto
+//   const addProducto = () => {
+//     Axios.post("http://localhost:3001/create", {
+//       nombre: nombre,
+//       descripcion: descripcion,
+//       precio: precio,
+//       categoria_id: categoriaId
+//     })
+//       .then(() => {
+//         getProductos();
+//         limpiarCampos();
+//         Swal.fire({
+//           title: "Producto registrado",
+//           icon: "success",
+//           timer: 2000,
+//         });
+//       })
+//       .catch((error) => {
+//         Swal.fire({
+//           icon: "error",
+//           title: "Oops...",
+//           text:
+//             JSON.parse(JSON.stringify(error)).message === "Network Error"
+//               ? "Intente más tarde"
+//               : JSON.parse(JSON.stringify(error)).message,
+//         });
+//       });
+//   };
+
+//   // Mostrar lista de productos
+//   const getProductos = () => {
+//     Axios.get("http://localhost:3001/mostrar").then((response) => {
+//       setProductos(response.data);
+//     });
+//   };
+
+//   // Actualizar producto
+//   const editarProductos = (val) => {
+//     setEditar(true);
+//     setNombre(val.nombre);
+//     setDescripcion(val.descripcion);
+//     setPrecio(val.precio);
+//     setCategoriaId(val.categoria_id);
+//     setId(val.id);
+//   };
+
+//   const putProducto = () => {
+//     Axios.put("http://localhost:3001/editar", {
+//       id: id,
+//       nombre: nombre,
+//       descripcion: descripcion,
+//       precio: precio,
+//       categoria_id: categoriaId
+//     })
+//       .then(() => {
+//         getProductos();
+//         limpiarCampos();
+//         Swal.fire({
+//           title: "Producto modificado",
+//           icon: "success",
+//           timer: 2000,
+//         });
+//       })
+//       .catch((error) => {
+//         Swal.fire({
+//           icon: "error",
+//           title: "Oops...",
+//           text:
+//             JSON.parse(JSON.stringify(error)).message === "Network Error"
+//               ? "Intente más tarde"
+//               : JSON.parse(JSON.stringify(error)).message,
+//         });
+//       });
+//   };
+
+//   // Eliminar producto
+//   const deleteProducto = (val) => {
+//     Swal.fire({
+//       title: "Eliminar",
+//       html: `¿Desea eliminar <strong>${val.nombre}</strong>?`,
+//       icon: "warning",
+//       showCancelButton: true,
+//       confirmButtonColor: "#3085d6",
+//       cancelButtonColor: "#d33",
+//       confirmButtonText: "Sí, eliminar",
+//       cancelButtonText: "No, cancelar",
+//     }).then((result) => {
+//       if (result.isConfirmed) {
+//         Axios.delete(`http://localhost:3001/eliminar/${val.id}`)
+//           .then(() => {
+//             getProductos();
+//             limpiarCampos();
+//             Swal.fire({
+//               title: "Eliminado!",
+//               text: `${val.nombre} fue eliminado`,
+//               icon: "success",
+//               timer: 2000,
+//               showConfirmButton: false,
+//             });
+//           })
+//           .catch((error) => {
+//             Swal.fire({
+//               icon: "error",
+//               title: "Oops...",
+//               text: "No se logró eliminar el producto",
+//             });
+//           });
+//       }
+//     });
+//   };
+
+//   // Limpiar campos
+//   const limpiarCampos = () => {
+//     setNombre("");
+//     setDescripcion("");
+//     setPrecio("");
+//     setCategoriaId("");
+//     setEditar(false);
+//   };
+
+//   return (
+//     <div className="container">
+//       <div className="card text-center">
+//         <div className="card-header">Agregar Productos</div>
+//         <div className="card-body">
+//           <div className="input-group mb-3">
+//             <div className="input-group m-3">
+//               <span className="input-group-text" id="basic-addon1">
+//                 Nombre del Producto:
+//               </span>
+//               <input
+//                 className="form-control"
+//                 type="text"
+//                 onChange={(event) => setNombre(event.target.value)}
+//                 placeholder="Ingrese el nombre del producto"
+//                 value={nombre}
+//                 aria-label="Username"
+//                 aria-describedby="basic-addon1"
+//               />
+//             </div>
+
+//             <div className="input-group m-3">
+//               <span className="input-group-text" id="basic-addon1">
+//                 Precio:
+//               </span>
+//               <input
+//                 className="form-control"
+//                 type="number"
+//                 onChange={(event) => setPrecio(event.target.value)}
+//                 placeholder="Ingrese el precio"
+//                 value={precio}
+//                 aria-label="Username"
+//                 aria-describedby="basic-addon1"
+//               />
+//             </div>
+
+//             <div className="input-group m-3">
+//               <span className="input-group-text" id="basic-addon1">
+//                 Descripción:
+//               </span>
+//               <input
+//                 className="form-control"
+//                 type="text"
+//                 onChange={(event) => setDescripcion(event.target.value)}
+//                 placeholder="Ingrese una descripción"
+//                 value={descripcion}
+//                 aria-label="Username"
+//                 aria-describedby="basic-addon1"
+//               />
+//             </div>
+
+//             <div className="input-group m-3">
+//               <span className="input-group-text" id="basic-addon1">
+//                 Categoría:
+//               </span>
+//               <select
+//                 className="form-control"
+//                 value={categoriaId}
+//                 onChange={(event) => setCategoriaId(event.target.value)}
+//               >
+//                 <option value="">Seleccione una categoría</option>
+//                 {categorias.map((categoria) => (
+//                   <option key={categoria.id} value={categoria.id}>
+//                     {categoria.nombre}
+//                   </option>
+//                 ))}
+//               </select>
+//             </div>
+//           </div>
+//         </div>
+//         <div className="card-footer text-body-secondary">
+//           {editar ? (
+//             <div>
+//               <button className="btn btn-warning m-2" onClick={putProducto}>
+//                 ACTUALIZAR
+//               </button>
+//               <button className="btn btn-info m-2" onClick={limpiarCampos}>
+//                 CANCELAR
+//               </button>
+//             </div>
+//           ) : (
+//             <button className="btn btn-success" onClick={addProducto}>
+//               Agregar
+//             </button>
+//           )}
+//         </div>
+//       </div>
+
+//       <table className="table table-striped">
+//         <thead>
+//           <tr>
+//             <th scope="col">#</th>
+//             <th scope="col">Nombre</th>
+//             <th scope="col">Descripción</th>
+//             <th scope="col">Precio</th>
+//             <th scope="col">Categoría</th>
+//             <th scope="col">Acciones</th>
+//           </tr>
+//         </thead>
+//         <tbody>
+//           {productoList.map((val, key) => (
+//             <tr key={val.id}>
+//               <th>{val.id}</th>
+//               <td>{val.nombre}</td>
+//               <td>{val.descripcion}</td>
+//               <td>{val.precio}</td>
+//               <td>{val.categoria_nombre}</td>
+//               <td>
+//                 <div className="btn-group" role="group">
+//                   <button
+//                     type="button"
+//                     onClick={() => editarProductos(val)}
+//                     className="btn btn-warning"
+//                   >
+//                     Editar
+//                   </button>
+//                   <button
+//                     type="button"
+//                     onClick={() => deleteProducto(val)}
+//                     className="btn btn-danger"
+//                   >
+//                     Eliminar
+//                   </button>
+//                 </div>
+//               </td>
+//             </tr>
+//           ))}
+//         </tbody>
+//       </table>
+//     </div>
+//   );
+// }
+
+// export default App;
