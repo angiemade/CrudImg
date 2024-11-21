@@ -3,18 +3,24 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import Axios from 'axios';
+import Cropper from 'react-cropper';
+import 'cropperjs/dist/cropper.css';
 
 function App() {
   const [file, setFile] = useState(null);
   const [imageList, setImageList] = useState([]);
   const [ListaActualizada, setListaActualizada] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [cropper, setCropper] = useState(null);
+  const [editingImageId, setEditingImageId] = useState(null);
+  const [editingImagePreview, setEditingImagePreview] = useState(null);
 
   // MOSTRAR IMÁGENES
   useEffect(() => {
     fetch('http://localhost:3001/images/get')
       .then(res => res.json())
       .then(res => {
-        console.log('Imagenes recibidas:', res); // Depuración para ver qué imágenes se reciben
+        console.log('Imagenes recibidas:', res);
         setImageList(res);
         setListaActualizada(false);
       })
@@ -23,35 +29,111 @@ function App() {
       });
   }, [ListaActualizada]);
 
-  // AGREGAR IMAGEN
+  // SELECCIONAR Y PREVISUALIZAR IMAGEN
   const selectedHandler = e => {
-    setFile(e.target.files[0]);
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview(reader.result); // Previsualizar la imagen
+        setFile(file); // Guardar el archivo para subirlo posteriormente
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
+  // SUBIR NUEVA IMAGEN
   const sendHandler = () => {
-    if (!file) {
-      alert('Debes subir un archivo');
+    if (!cropper) {
+      alert('Debes seleccionar y ajustar una imagen antes de subirla');
       return;
     }
 
-    const formdata = new FormData();
-    formdata.append('image', file);
+    cropper.getCroppedCanvas().toBlob(blob => {
+      const formdata = new FormData();
+      formdata.append('image', blob, file.name);
 
-    fetch('http://localhost:3001/images/post', {
-      method: 'POST',
-      body: formdata
-    })
-      .then(res => res.text())
-      .then(res => {
-        console.log('Respuesta al subir imagen:', res);
-        setListaActualizada(true);
+      fetch('http://localhost:3001/images/post', {
+        method: 'POST',
+        body: formdata
       })
-      .catch(err => {
-        console.error('Error al subir la imagen:', err);
-      });
+        .then(res => res.text())
+        .then(res => {
+          console.log('Respuesta al subir imagen:', res);
+          setListaActualizada(true);
+          setImagePreview(null); // Limpiar previsualización
+          setFile(null);
+          setCropper(null);
+        })
+        .catch(err => {
+          console.error('Error al subir la imagen:', err);
+        });
+    });
+  };
 
-    document.getElementById('fileinput').value = null;
-    setFile(null);
+  // EDITAR IMAGEN
+  const editHandler = (imageName) => {
+    const imageId = imageName.split('-')[0]; // Extraer el ID de la imagen
+    setEditingImageId(imageId);
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setEditingImagePreview(reader.result); // Mostrar la imagen en el recuadro
+          setFile(file); // Guardar el archivo para subirlo posteriormente
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    // Simular clic para abrir el selector de archivos
+    input.click();
+  };
+
+  // GUARDAR CAMBIOS EN IMAGEN EDITADA
+  const saveEditHandler = () => {
+    if (!cropper || !editingImageId) {
+      alert('Debes seleccionar y ajustar una imagen antes de guardar los cambios');
+      return;
+    }
+
+    cropper.getCroppedCanvas().toBlob(blob => {
+      const formdata = new FormData();
+      formdata.append('image', blob, file.name);
+
+      fetch(`http://localhost:3001/images/edit/${editingImageId}`, {
+        method: 'PUT',
+        body: formdata
+      })
+        .then(res => res.text())
+        .then(res => {
+          console.log('Respuesta al editar imagen:', res);
+          Swal.fire({
+            title: 'Imagen actualizada!',
+            icon: 'success',
+            timer: 2000
+          });
+          setListaActualizada(true);
+          setEditingImageId(null);
+          setEditingImagePreview(null);
+          setFile(null);
+          setCropper(null);
+        })
+        .catch(err => {
+          console.error('Error al editar la imagen:', err);
+          Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "No se logró actualizar la imagen",
+          });
+        });
+    });
   };
 
   // ELIMINAR IMAGEN
@@ -87,51 +169,6 @@ function App() {
     });
   };
 
-  // FUNCION EDITAR
-  const editHandler = (imageName) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-
-    input.onchange = (e) => {
-      const newFile = e.target.files[0];
-      if (!newFile) {
-        alert('No se seleccionó ninguna imagen');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('image', newFile);
-
-      const imageId = imageName.split('-')[0]; // Extraer el ID de la imagen
-      fetch(`http://localhost:3001/images/edit/${imageId}`, {
-        method: 'PUT',
-        body: formData
-      })
-        .then(res => res.text())
-        .then(res => {
-          console.log('Respuesta al editar imagen:', res);
-          Swal.fire({
-            title: 'Imagen actualizada!',
-            icon: 'success',
-            timer: 3000
-          });
-          setListaActualizada(true); // Actualizar la lista
-        })
-        .catch(err => {
-          console.error('Error al editar la imagen:', err);
-          Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            text: "No se logró actualizar la imagen",
-          });
-        });
-    };
-
-    // Simular un clic para abrir el selector de archivos
-    input.click();
-  };
-
   return (
     <>
       <nav className="navbar navbar-dark bg-dark">
@@ -141,39 +178,119 @@ function App() {
       </nav>
 
       <div className="container mt-5">
-        <div className="card p-3">
-          <div className="row">
-            <div className="col-10">
-              <input id="fileinput" onChange={selectedHandler} className="form-control" type="file" />
-            </div>
-            <div className="col-2">
-              <button onClick={sendHandler} type="button" className="btn btn-primary col-12">Upload</button>
+        <div className="row">
+          {/* Botón para agregar nueva imagen */}
+          <div className="col-md-3 mb-4">
+            <div
+              className="card d-flex justify-content-center align-items-center"
+              style={{
+                height: '200px',
+                backgroundColor: '#f8f9fa',
+                border: '2px dashed #ced4da',
+                cursor: imagePreview ? 'default' : 'pointer'
+              }}
+              onClick={() => !imagePreview && document.getElementById('fileinput').click()}
+              
+            >
+              {imagePreview ? (
+                <>
+                  <Cropper
+                    src={imagePreview}
+                    style={{ height: 200, width: '100%' }}
+                    aspectRatio={1}
+                    guides={false}
+                    viewMode={1}
+                    scalable={true}
+                    zoomable={true}
+                    cropBoxMovable={true}
+                    cropBoxResizable={true}
+                    onInitialized={(instance) => setCropper(instance)}
+                  />
+                  <button
+                    type="button"
+                    onClick={sendHandler}
+                    className="btn btn-primary mt-2"
+                  >
+                    Subir Imagen
+                  </button>
+                  
+                </>
+              ) : (
+                <i
+                  className="bi bi-pencil"
+                  style={{ fontSize: '2rem', color: '#6c757d' }}
+                ></i>
+              )}
+              <input
+                id="fileinput"
+                type="file"
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={selectedHandler}
+              />
             </div>
           </div>
-        </div>
-      </div>
-      <div className="container mt-5">
-        <div className="row">
-          {imageList.length === 0 ? (
-            <p>No hay imágenes disponibles</p>
-          ) : (
-            imageList.map((image, index) => (
+
+          {/* Mostrar imágenes existentes */}
+          {imageList.map((image, index) => {
+            const imageId = image.split('-')[0];
+            return (
               <div key={index} className="col-md-3 mb-4">
                 <div className="card">
-                  <img
-                    className="card-img-top"
-                    style={{ height: '200px', width: '100%' }}
-                    src={`http://localhost:3001/dbimages/${image}?t=${Date.now()}`}
-                    alt="foto producto"
-                    onError={(e) => { e.target.onerror = null; e.target.src = 'placeholder.png'; }}
-                  />
-
-                  <button type="button" onClick={() => deleteHandler(image)} className="btn btn-danger mt-2">Eliminar</button>
-                  <button type="button" onClick={() => editHandler(image)} className="btn btn-warning mt-2">Editar</button>
+                  {editingImageId === imageId && editingImagePreview ? (
+                    <>
+                      <Cropper
+                        src={editingImagePreview}
+                        style={{ height: 200, width: '100%' }}
+                        aspectRatio={1}
+                        guides={false}
+                        viewMode={1}
+                        scalable={true}
+                        zoomable={true}
+                        cropBoxMovable={true}
+                        cropBoxResizable={true}
+                        onInitialized={(instance) => setCropper(instance)}
+                      />
+                      <button
+                        type="button"
+                        onClick={saveEditHandler}
+                        className="btn btn-success mt-2"
+                      >
+                        Guardar Cambios
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <img
+                        className="card-img-top"
+                        style={{ height: '200px', width: '100%' }}
+                        src={`http://localhost:3001/dbimages/${image}?t=${Date.now()}`}
+                        alt="foto producto"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = 'placeholder.png';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => deleteHandler(image)}
+                        className="btn btn-danger mt-2"
+                      >
+                        Eliminar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => editHandler(image)}
+                        className="btn btn-warning mt-2"
+                      >
+                        Editar
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
-            ))
-          )}
+            );
+          })}
         </div>
       </div>
     </>
