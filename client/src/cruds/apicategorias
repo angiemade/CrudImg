@@ -1,0 +1,89 @@
+// Importamos las librerías necesarias
+const express = require("express");
+const app = express();
+const mysql = require("mysql2");
+const cors = require("cors");
+
+// Configuraciones iniciales
+app.use(cors());
+app.use(express.json());
+
+// Conexión a la base de datos
+const db = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "mysql",
+  database: "pequeta"
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error("Error al conectar a la base de datos: ", err);
+  } else {
+    console.log("Conexión exitosa a la base de datos");
+  }
+});
+
+// Rutas para el CRUD de categorías
+app.get("/categorias", (req, res) => {
+  db.query("SELECT * FROM categorias", (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).json(result);
+    }
+  });
+});
+
+app.post("/categorias", (req, res) => {
+  const { nombre } = req.body;
+  if (!nombre) {
+    return res.status(400).send("El nombre de la categoría es obligatorio");
+  }
+  db.query("INSERT INTO categorias (nombre) VALUES (?)", [nombre], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(201).send("Categoría agregada");
+    }
+  });
+});
+
+app.put("/categorias/:id", (req, res) => {
+  const { id } = req.params;
+  const { nombre } = req.body;
+  if (!nombre) {
+    return res.status(400).send("El nombre de la categoría es obligatorio");
+  }
+  db.query("UPDATE categorias SET nombre = ? WHERE id = ?", [nombre, id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send("Categoría actualizada");
+    }
+  });
+});
+
+app.delete("/categorias/:id", (req, res) => {
+  const { id } = req.params;
+  db.query("DELETE FROM categorias WHERE id = ?", [id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send("Categoría eliminada");
+    }
+  });
+});
+
+// Ruta de prueba para verificar si el servidor está funcionando
+app.get("/", (req, res) => {
+  res.send("Servidor funcionando correctamente");
+});
+
+// Servidor en escucha
+const PORT = 3001;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
+});
+
+module.exports = db;
